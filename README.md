@@ -1,3 +1,4 @@
+<img width="942" height="392" alt="Screenshot 2026-07-27 195917" src="https://github.com/user-attachments/assets/5d3099a1-3e95-4851-aecc-867c5de077b6" />
 # IPL Win Predictor
 
 A simple Streamlit app that predicts the probability of the batting team winning an IPL match based on the current game situation.
