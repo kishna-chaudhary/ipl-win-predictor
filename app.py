@@ -1,143 +1,124 @@
 import streamlit as st
+import pandas as pd
 
 from predictor import CITIES, TEAMS, predict_win_probability
 
-st.set_page_config(page_title="IPL Win Predictor", page_icon="🏏", layout="centered")
 
-st.markdown(
-    """
-    <style>
-    .block-container {
-        padding-top: 1rem;
-        padding-bottom: 2rem;
-        max-width: 1100px;
-    }
-    .hero-card {
-        background: linear-gradient(135deg, rgba(7, 30, 61, 0.95), rgba(31, 60, 136, 0.95));
-        border: 1px solid rgba(255,255,255,0.18);
-        border-radius: 24px;
-        padding: 1.2rem 1.4rem;
-        box-shadow: 0 18px 45px rgba(0,0,0,0.25);
-        animation: slideInDown 0.7s ease-out;
-        margin-bottom: 1rem;
-    }
-    .hero-title {
-        font-size: 2rem;
-        font-weight: 800;
-        margin: 0;
-        color: #fff7e6;
-    }
-    .hero-subtitle {
-        color: #dbe9ff;
-        margin-top: 0.35rem;
-        font-size: 1rem;
-    }
-    .panel-card {
-        background: rgba(255,255,255,0.9);
-        border-radius: 20px;
-        padding: 1rem 1rem 0.6rem;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.12);
-        animation: slideInLeft 0.8s ease-out;
-    }
-    .result-card {
-        margin-top: 1rem;
-        background: linear-gradient(135deg, rgba(255,107,53,0.95), rgba(255, 165, 0, 0.9));
-        border-radius: 20px;
-        padding: 1rem 1.2rem;
-        box-shadow: 0 14px 30px rgba(0,0,0,0.2);
-        color: white;
-        animation: slideInRight 0.8s ease-out;
-    }
-    .prob-badge {
-        font-size: 2.3rem;
-        font-weight: 800;
-        margin-bottom: 0.3rem;
-    }
-    .stButton > button {
-        border-radius: 999px;
-        background: linear-gradient(90deg, #ff6b35, #ff9f1c);
-        color: white;
-        border: none;
-        padding: 0.55rem 1rem;
-        font-weight: 700;
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-    .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 18px rgba(255,107,53,0.25);
-    }
-    .stTextInput input, .stSelectbox div, .stNumberInput input {
-        border-radius: 12px;
-    }
-    @keyframes slideInDown {
-        from { transform: translateY(-14px); opacity: 0; }
-        to { transform: translateY(0); opacity: 1; }
-    }
-    @keyframes slideInLeft {
-        from { transform: translateX(-16px); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-    }
-    @keyframes slideInRight {
-        from { transform: translateX(16px); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
+st.set_page_config(page_title="IPL Win Predictor", page_icon="🏏", layout="wide")
 
-st.markdown(
-    """
-    <div class="hero-card">
-        <div class="hero-title">🏏 IPL Win Predictor</div>
-        <div class="hero-subtitle">Slide through a live match scenario and get a quick, intuitive win probability.</div>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+CSS = """
+<style>
+body { background: #f2f7fb; }
+.app-header { background: linear-gradient(90deg,#0b3b73,#1f4c99); padding: 16px; border-radius: 8px; color: #fff; }
+.app-title { margin: 0; font-weight: 700; font-size: 20px; }
+.card { background: #fff; border-radius: 12px; padding: 18px; box-shadow: 0 12px 30px rgba(11,38,71,0.06); }
+.muted { color: #6b7686; font-size: 13px; }
+.field-canvas { width:100%; height:260px; border-radius:10px; background: linear-gradient(180deg,#eaf5ff,#ffffff); display:flex; align-items:center; justify-content:center; }
+.predict-btn > button { background: linear-gradient(90deg,#1565c0,#1e88e5); color: white; border-radius: 999px; padding: 10px 16px; font-weight:700; }
+.result-card { border-radius: 12px; padding: 14px; }
+</style>
+"""
 
-with st.form("prediction_form"):
-    st.markdown('<div class="panel-card">', unsafe_allow_html=True)
-    col1, col2 = st.columns(2)
+st.markdown(CSS, unsafe_allow_html=True)
 
-    with col1:
-        batting_team = st.selectbox("Batting Team", TEAMS, index=0)
-        bowling_team = st.selectbox("Bowling Team", TEAMS, index=1)
-        city = st.selectbox("City", CITIES, index=3)
+st.markdown('<div class="app-header"><div style="display:flex;justify-content:space-between;align-items:center"><div><h1 class="app-title">🏏 IPL Win Predictor</h1><div class="muted">Adjust match parameters and instantly visualize win probability.</div></div></div></div>', unsafe_allow_html=True)
 
-    with col2:
-        current_runs = st.number_input("Current Runs", min_value=0, max_value=300, value=120, step=1)
-        overs_completed = st.number_input("Overs Completed", min_value=0.0, max_value=20.0, value=10.0, step=0.1)
-        wickets = st.number_input("Wickets", min_value=0, max_value=9, value=2, step=1)
-        target_runs = st.number_input("Target Runs", min_value=1, max_value=400, value=180, step=1)
+left, center, right = st.columns([1.2, 1.6, 1.0], gap="large")
 
-    submitted = st.form_submit_button("Predict Win Probability", use_container_width=True)
+with left:
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.subheader("Match Details")
+    batting_team = st.selectbox("Batting Team", TEAMS, index=0)
+    bowling_team = st.selectbox("Bowling Team", TEAMS, index=1)
+    city = st.selectbox("City", CITIES, index=2)
+    st.markdown("<hr/>", unsafe_allow_html=True)
+    with st.expander("Prediction Result", expanded=False):
+        st.write("Adjust sliders on the right and press Predict to see results.")
     st.markdown('</div>', unsafe_allow_html=True)
 
-if submitted:
-    inputs = {
-        "batting_team": batting_team,
-        "bowling_team": bowling_team,
-        "city": city,
-        "current_runs": int(current_runs),
-        "overs_completed": float(overs_completed),
-        "wickets": int(wickets),
-        "target_runs": int(target_runs),
-    }
-
-    probability = predict_win_probability(inputs)
-
-    st.markdown('<div class="result-card">', unsafe_allow_html=True)
-    st.markdown(f"<div class='prob-badge'>{probability * 100:.1f}%</div>", unsafe_allow_html=True)
-    st.progress(probability)
-    st.caption("Predicted win chance for the batting side")
-
-    if probability >= 0.6:
-        st.success("The batting team is looking strong in this situation.")
-    elif probability <= 0.4:
-        st.warning("The bowling side is currently favored.")
+with center:
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.subheader("Field State")
+    # Prefer a provided field-layout image if available, otherwise show SVG placeholder
+    import os
+    img_path = "field_layout.png"
+    if os.path.exists(img_path):
+        st.image(img_path, use_column_width=True, caption="Ground layout")
     else:
-        st.info("This match is finely balanced and could swing either way.")
+        # Simple illustrative SVG field (fallback)
+        svg_field = """
+        <svg width='100%' height='220' viewBox='0 0 600 220' xmlns='http://www.w3.org/2000/svg'>
+            <rect x='0' y='0' width='600' height='220' rx='12' fill='#eef9ff' stroke='#d7ecff' />
+            <rect x='270' y='50' width='60' height='120' rx='6' fill='#ffffff' stroke='#cfe7ff' />
+            <circle cx='300' cy='110' r='6' fill='#ff6b35' />
+        </svg>
+        """
+        st.markdown(f'<div class="field-canvas">{svg_field}</div>', unsafe_allow_html=True)
 
-    st.caption("This demo uses a lightweight match-style model for quick, interactive predictions.")
+    st.markdown('<div style="height:10px"></div>', unsafe_allow_html=True)
+
+    if st.button("Predict Win Probability", key="predict_button"):
+        # gather inputs from right column session state
+        inputs = {
+            "batting_team": batting_team,
+            "bowling_team": bowling_team,
+            "city": city,
+            "current_runs": int(st.session_state.get("current_runs", 0)),
+            "overs_completed": float(st.session_state.get("overs_completed", 0.0)),
+            "total_overs": int(st.session_state.get("total_overs", 20)),
+            "wickets": int(st.session_state.get("wickets", 0)),
+            "target_runs": int(st.session_state.get("target_runs", 0)),
+        }
+
+        prob = predict_win_probability(inputs)
+        batting_pct = prob * 100
+        bowling_pct = 100 - batting_pct
+
+        st.markdown('<div class="result-card">', unsafe_allow_html=True)
+        st.markdown(f"<div style='font-size:32px;font-weight:800;color:#08345a'>{batting_pct:.0f}%</div>", unsafe_allow_html=True)
+        st.progress(prob)
+
+        # simple bar chart using pandas + streamlit (avoids Altair compatibility issues)
+        data = [
+            {"team": batting_team, "prob": batting_pct},
+            {"team": bowling_team, "prob": bowling_pct},
+        ]
+        df = pd.DataFrame(data).set_index('team')
+        teams = df.index.tolist()
+        probs = df['prob'].tolist()
+        colors = ['#ff6b35', '#2563eb']
+        # render HTML/CSS horizontal bars to avoid external chart libs
+        bars_html = "<div style='display:flex;flex-direction:column;gap:8px;'>"
+        for i, team in enumerate(teams):
+            p = probs[i]
+            color = colors[i] if i < len(colors) else '#888'
+            bars_html += f"<div style='display:flex;align-items:center;gap:12px'><div style='width:110px;font-weight:700;color:#08345a'>{team}</div><div style='flex:1;background:#e9f2ff;border-radius:10px;height:18px;'><div style='width:{p}%;background:{color};height:100%;border-radius:10px;'></div></div><div style='width:48px;text-align:right;font-weight:700;color:#08345a'>{p:.0f}%</div></div>"
+        bars_html += "</div>"
+        st.markdown(bars_html, unsafe_allow_html=True)
+
+        if prob >= 0.6:
+            st.success("The batting team is looking strong in this situation.")
+        elif prob <= 0.4:
+            st.warning("The bowling side is currently favored.")
+        else:
+            st.info("This match is finely balanced and could swing either way.")
+
+        st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+with right:
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.subheader("Live Match State")
+    current_runs = st.slider("Current Runs", min_value=0, max_value=400, value=120, step=1, key="current_runs")
+    overs_completed = st.slider("Overs Completed", min_value=0.0, max_value=20.0, value=10.0, step=0.1, key="overs_completed")
+    total_overs = st.select_slider("Total Overs", options=[10, 20, 50], value=20, key="total_overs")
+    wickets = st.slider("Wickets Down", min_value=0, max_value=10, value=2, step=1, key="wickets")
+    target_runs = st.number_input("Target Runs", min_value=1, max_value=500, value=180, step=1, key="target_runs")
+
+    runs_needed = max(int(target_runs - current_runs), 0)
+    balls_left = max(int((int(total_overs) - overs_completed) * 6), 0)
+
+    st.markdown('<div style="height:8px"></div>', unsafe_allow_html=True)
+    st.text(f"Runs Req: {runs_needed}   |   Balls Left: {balls_left}   |   Wickets: {wickets}")
+    st.caption('Use sliders to adjust the live match state. Press Predict to compute win probability.')
     st.markdown('</div>', unsafe_allow_html=True)

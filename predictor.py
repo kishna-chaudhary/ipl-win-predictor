@@ -26,7 +26,7 @@ CITIES = [
     "Pune",
 ]
 
-FEATURE_COLUMNS = ["batting_team", "bowling_team", "city", "current_runs", "overs_completed", "wickets", "target_runs"]
+FEATURE_COLUMNS = ["batting_team", "bowling_team", "city", "current_runs", "overs_completed", "total_overs", "wickets", "target_runs"]
 
 
 class SimpleLogisticRegression:
@@ -61,12 +61,13 @@ class SimpleLogisticRegression:
         bowling_team = row.get("bowling_team", "MI")
         city = row.get("city", "Chennai")
         current_runs = float(row.get("current_runs", 0))
-        overs_completed = float(row.get("overs_completed", 0))
+        overs_completed = float(row.get("overs_completed") or 0)
+        total_overs = float(row.get("total_overs") or 20)
         wickets = float(row.get("wickets", 0))
         target_runs = float(row.get("target_runs", 0))
 
         runs_needed = max(target_runs - current_runs, 0.0)
-        remaining_overs = max(20 - overs_completed, 0.1)
+        remaining_overs = max(total_overs - overs_completed, 0.1)
         wickets_left = max(10 - wickets, 0.0)
         run_rate_needed = runs_needed / remaining_overs if remaining_overs > 0 else 0.0
 
